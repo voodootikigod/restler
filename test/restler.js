@@ -1,6 +1,7 @@
 var helper = require ('./test_helper'),
     rest = require('../lib/restler'),
-    sys  = require('sys');
+    sys  = require('sys'),
+    http = require('http');
     
 helper.testCase("Basic Tests", helper.echoServer, {
   testRequestShouldTakePath: function(host, test) {
@@ -91,6 +92,7 @@ helper.testCase("Basic Tests", helper.echoServer, {
 });
 
 
+
 helper.testCase("Deserialization Tests", helper.dataServer, {
   testAutoSerializerShouldParseJSON: function(host, test) {
     rest.get(host, {
@@ -122,6 +124,31 @@ helper.testCase('Redirect Tests', helper.redirectServer, {
   testShouldAutomaticallyFollowRedirects: function(host, test) {
     rest.get(host, function(data) {
       test.assertEquals('Hell Yeah!', data, "returned " + sys.inspect(data));
+    });
+  }
+});
+
+
+
+
+helper.testCase("Streaming Use Case Tests", helper.dataServer, {
+  testReturnsClientObjectForStreamProcessing: function(host, test) {
+    var res = rest.get(host, {
+      headers: { 'Accepts': 'application/json' }
+    });
+    test.assertFalse(typeof res === "undefined");
+    test.assertFalse(res === null);
+    res.finish(function(response) {
+      var body = '';
+    
+      response.addListener('body', function(chunk) {
+        body += chunk;
+      });
+    
+      response.addListener('complete', function() {
+        //note that it is not translated.
+        test.assertEquals("{ ok: true }", body, "returned " + sys.inspect(body)); 
+      });
     });
   }
 });
